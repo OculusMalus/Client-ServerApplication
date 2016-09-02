@@ -11,27 +11,32 @@ using System.Threading;
 
 namespace ClientApplication
 {
+
     class Program
     {
-           
-            static void Main(String[] args)
-            {
-
-            TcpClient client = new TcpClient("10.2.20.7", 45241);
+        static void Main(String[] args)
+        {
+            TcpClient client = new TcpClient("10.2.20.17", 15357);
             Console.WriteLine("[Trying to connect to server...]");
+
             NetworkStream stream = client.GetStream();
             Console.WriteLine("[Connected]");
-            string ch = Console.ReadLine();
-            byte[] message = Encoding.Unicode.GetBytes(ch);
-            stream.Write(message, 0, message.Length);
-            Console.WriteLine("--------------Sent--------------");
-            client.Close();
-            Console.ReadKey();
 
-            }
-     }
+            Console.WriteLine("Please enter a username");
+            string userName = Console.ReadLine();
 
+            userName = "  " + userName + "$$$user$";
+            byte[] outStream = Encoding.Unicode.GetBytes(userName);
+
+            stream.Write(outStream, 0, outStream.Length);
+            stream.Flush();
+
+            RunChat chat = new RunChat();
+            chat.Chat(client);
+        }
+    }
 }
+
 
 
 

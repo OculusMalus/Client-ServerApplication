@@ -8,32 +8,51 @@ using System.Threading.Tasks;
 
 namespace ServerApplication
 {
-    public class handleSession
+    public class HandleSession : IComparable
     {
+        static Dictionary<string, User> usersDictionary = new Dictionary<string, User>();
         MessageParse msg = new MessageParse();
-        TcpClient chatClient;
-        string clientNumber;
+        public TcpClient chatClient;
+        //string clientNumber;
+        public string userName;
+        int i = 1;
 
-        public void startClient(TcpClient inClientSocket, string clineNo)
+        public HandleSession(TcpClient client)
+        {
+            this.chatClient = client;
+        }
+
+
+        public void StartClient(TcpClient inClientSocket, string clineNo)
         {
             chatClient = inClientSocket;
-            clientNumber = clineNo;
+            int clientNumber = Convert.ToInt32(clineNo);
 
+            byte[] bytesFrom = new byte[100000];
+            NetworkStream networkStream = chatClient.GetStream();
+            networkStream.Read(bytesFrom, 0, chatClient.ReceiveBufferSize);
 
-            Thread getThread = new Thread(GetMessage);
+            string dataFromClient = Encoding.Unicode.GetString(bytesFrom);
+            userName = (msg.CheckForUserName(dataFromClient)) ? dataFromClient.Substring(0, dataFromClient.IndexOf("$$$")) : "User #" + clineNo;
+            Console.WriteLine(" >> " + userName + " has joined!");
+
+            User user = new User(chatClient, userName, clientNumber);
+            usersDictionary.Add(userName, user);
+
+            Thread getThread = new Thread(HandleMessage);
             Thread sendThread = new Thread(SendMessage);
 
             getThread.Start();
             sendThread.Start();
-                   
+
         }
 
-        private void GetMessage()
+        private void HandleMessage()
         {
             int requestCount = 0;
             byte[] bytesFrom = new byte[100000];
             string dataFromClient = null;
-            string rCount = null;
+            //string rCount = null;
             requestCount = 0;
 
             while ((true))
@@ -41,17 +60,48 @@ namespace ServerApplication
                 try
                 {
                     requestCount = requestCount + 1;
+
                     NetworkStream networkStream = chatClient.GetStream();
 
                     networkStream.Read(bytesFrom, 0, chatClient.ReceiveBufferSize);
+
                     dataFromClient = Encoding.Unicode.GetString(bytesFrom);
 
-                    msg.CheckForUserName(dataFromClient);
-                    
                     dataFromClient = dataFromClient.Substring(0, dataFromClient.IndexOf("$$$"));
-                    Console.WriteLine(" >> " + "From client-" + clientNumber + dataFromClient);
 
-                    rCount = Convert.ToString(requestCount);
+                    Queue<string> messageQ = new Queue<string>();
+
+                    messageQ.Enqueue(dataFromClient);
+
+                    Console.WriteLine(" >> " + "From client- " + dataFromClient);
+
+                    
+                    Dictionary<string, User>.KeyCollection usersKeys = usersDictionary.Keys;
+
+                                            
+                    foreach (string userName in usersKeys)
+                    {
+                        NetworkStream relayStream = chatClient.GetStream();
+
+                        string message = dataFromClient;//messageQ.Dequeue();
+
+                        message = "  >> " + "From " + userName + ": " + message + "$$$";
+
+                        byte[] outStream = Encoding.Unicode.GetBytes(message);
+
+                        relayStream.Write(outStream, 0, outStream.Length);
+
+                        networkStream.Flush();
+                    }
+                    //{
+                    //    Byte[] echoBytes = new byte[100000];
+                    //    //Byte[] echoBytes = null;
+                    //    //NetworkStream EchoStream = chatClient.GetStream();
+                    //    echoBytes = Encoding.Unicode.GetBytes(dataFromClient);
+
+                    //    networkStream.Write(echoBytes, 0, echoBytes.Length);
+                    //}
+
                     networkStream.Flush();
 
                 }
@@ -64,25 +114,28 @@ namespace ServerApplication
             }
         }
 
-                private void SendMessage()
+        private void SendMessage()
         {
             byte[] bytesFrom = new byte[100000];
-            Byte[] sendBytes = null;
-            string serverResponse = null;
-            
+            //Byte[] sendBytes = null;
+            //string serverResponse = null;
+
             while ((true))
             {
                 try
                 {
-                    NetworkStream networkStream = chatClient.GetStream();
-                    serverResponse = Console.ReadLine();
+                    NetworkStream stream = chatClient.GetStream();
 
-                    serverResponse = serverResponse + "$$$";
-                    sendBytes = Encoding.Unicode.GetBytes(serverResponse);
+                    string message = Console.ReadLine();
 
-                    networkStream.Write(sendBytes, 0, sendBytes.Length);
-                    networkStream.Flush();
-                    
+                    message = "  " + message + "$$$";
+
+                    byte[] outStream = Encoding.Unicode.GetBytes(message);
+
+                    stream.Write(outStream, 0, outStream.Length);
+
+                    stream.Flush();
+
                 }
 
                 catch (Exception ex)
@@ -92,5 +145,11 @@ namespace ServerApplication
                 }
             }
         }
+
+        public int CompareTo(object obj)
+        {
+            return string.Compare(((HandleSession)obj).userName, userName);
+        }
+
     }
 }

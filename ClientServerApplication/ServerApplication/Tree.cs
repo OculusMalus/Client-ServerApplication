@@ -10,34 +10,27 @@ namespace ServerApplication
     {
         Node top;
 
-        public Tree(string value)
+        public void AddStart(HandleSession client)
         {
-            top = new Node(value);
-        }
-
-
-        public void AddStart(string value)
-        {
-            AddRecursive(ref top, value);
+            AddRecursive(ref top, client);
             
         }
 
-        private void AddRecursive(ref Node node, string value)
+        private void AddRecursive(ref Node node, HandleSession client)
         {
             if (node == null)
             {
-                Node newNode = new Node(value);
-                node = newNode;
+                top = new Node(client);
                 return;
             }
-            if (String.Compare(value, node.value) < 0)
+            if (client.CompareTo(node.value) < 0)
             {
-                AddRecursive(ref node.left, value);
+                AddRecursive(ref node.left, client);
                 return;
             }
-            if (String.Compare(value, node.value)>=0)
+            if (client.CompareTo(node.value) >=0)
             {
-                AddRecursive(ref node.right, value);
+                AddRecursive(ref node.right, client);
                 return;
             }
         }

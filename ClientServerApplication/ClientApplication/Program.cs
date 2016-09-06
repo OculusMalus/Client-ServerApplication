@@ -16,7 +16,7 @@ namespace ClientApplication
     {
         static void Main(String[] args)
         {
-            TcpClient client = new TcpClient("10.2.20.17", 15357);
+            TcpClient client = new TcpClient("10.2.20.14", 15357);
             Console.WriteLine("[Trying to connect to server...]");
 
             NetworkStream stream = client.GetStream();

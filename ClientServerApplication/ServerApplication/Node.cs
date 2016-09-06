@@ -8,13 +8,13 @@ namespace ServerApplication
 {
     class Node
     {
-        public string value;
+        public HandleSession value;
         public Node left;
         public Node right;
 
-        public Node(string initial)
+        public Node(HandleSession client)
         {
-            value = initial;
+            value = client;
             left = null;
             right = null;
         }
